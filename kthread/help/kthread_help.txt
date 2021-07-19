@@ -1,0 +1,9 @@
+https://riptutorial.com/linux-kernel/example/31869/creation-of-kernel-threads
+https://sysplay.in/blog/linux-kernel-internals/2015/04/kernel-threads/
+https://www.oreilly.com/library/view/understanding-the-linux/0596002130/ch03s05.html
+https://itectec.com/ubuntu/ubuntu-how-to-compile-linux-kernel-module-printk-missing/
+https://www.kernel.org/doc/Documentation/kbuild/modules.txt
+https://www.programmersought.com/article/83015124510/
+https://stackoverflow.com/questions/1184274/read-write-files-within-a-linux-kernel-module
+https://stackoverflow.com/questions/283375/detecting-tcp-client-disconnect
+https://linux-kernel-labs.github.io/refs/heads/master/labs/networking.html
