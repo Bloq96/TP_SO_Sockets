@@ -14,3 +14,9 @@ https://docs.huihoo.com/doxygen/linux/kernel/3.7/structiovec.html
 https://elixir.bootlin.com/linux/latest/source/include/linux/socket.h
 https://stackoverflow.com/questions/32593697/understanding-the-msghdr-structure-from-sys-socket-h
 https://elixir.bootlin.com/linux/latest/source/include/linux/net.h#L137
+https://stackoverflow.com/questions/47315064/how-do-i-fill-out-the-iov-iter-structure-for-use-with-msghdr
+https://stackoverflow.com/questions/44220221/be-confused-with-msg-name-field-in-msghdr-structure
+https://stackoverflow.com/questions/57354274/why-do-i-get-error-too-few-arguments-to-function-sock-ops-accept
+https://stackoverflow.com/questions/3041942/need-help-in-understanding-the-mapping-of-user-space-send-sendto-sendmsg-to-ke
+https://stackoverflow.com/questions/9260937/unix-socket-error-14-efault-bad-address
+https://stackoverflow.com/questions/39691131/undefined-functions-while-compiling-linux-kernel-module
