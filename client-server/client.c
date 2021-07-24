@@ -45,12 +45,21 @@ int main(int argc, char * argv[])
     }
     
     printf("Conectado ao servidor: %s com sucesso\n", host);
+    
+    len = 14;
+    buf[0] = 'H'; buf[1] = 'e'; buf[2] = 'l'; buf[3] = 'l';
+    buf[4] = 'o'; buf[5] = ','; buf[6] = ' '; buf[7] = 's';
+    buf[8] = 'e'; buf[9] = 'r'; buf[10] = 'v'; buf[11] = 'e';
+    buf[12] = 'r'; buf[13] = '!';
+    len = send(s, buf, len, 0);
+    printf("Comprimentando o servidor... %d\n", len);
+
     len = recv(s, buf, sizeof(buf), 0);
-    printf("Servidor diz: ");
+    printf("Servidor responde: ");
     for(int it=0;it<len;++it) {
         printf("%c", buf[it]);
     }
-    printf("\n");
+    printf(" [%d]\n", len);
 
     close(s);
 }

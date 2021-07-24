@@ -7,8 +7,11 @@
 #include <linux/net.h>
 #include <linux/seq_file_net.h>
 #include <linux/socket.h>
+//#include <linux/types.h>
 #include <linux/uaccess.h>
 #include <linux/uio.h>
+//#include <linux/unistd.h>
+//#include <netdb.h>
 
 #define MAX_PENDING 5
 #define MESSAGE_MAX_LENGTH 256
@@ -17,8 +20,8 @@
 static struct task_struct *threadInfo;
 
 static int initServerSocket(struct socket **newSocket,
-struct sockaddr_in *socketAddress,unsigned int ipAddress,
-unsigned short port) {
+struct sockaddr_in *socketAddress,char *ipAddress,unsigned short port)
+{
     int len = -1;
 
     len = sock_create_kern(&init_net,PF_INET,SOCK_STREAM,IPPROTO_TCP,
@@ -31,7 +34,7 @@ unsigned short port) {
     memset(socketAddress,0, sizeof(*socketAddress));
     socketAddress->sin_family = AF_INET;
     socketAddress->sin_port = htons(port);
-    socketAddress->sin_addr.s_addr = ipAddress;
+    inet_aton(ipAddress,&(socketAddress->sin_addr.s_addr));
 
     len = (*newSocket)->ops->bind(*newSocket,
     (struct sockaddr *)socketAddress,sizeof(*socketAddress));
@@ -63,8 +66,8 @@ struct socket **newConnectionSocket) {
     return 0;
 }
 
-static void configMessage(struct msghdr *message,struct kvec (*kv)[1],
-struct iovec (*iov)[1],char (*messageBuffer)[MESSAGE_MAX_LENGTH],
+static void configMessage(struct msghdr *message,struct kvec **kv,
+struct iovec **iov,char **messageBuffer,
 unsigned long int messageLength,unsigned int mode) {
     message->msg_name = NULL;
     message->msg_namelen = 0;
@@ -72,24 +75,26 @@ unsigned long int messageLength,unsigned int mode) {
     message->msg_controllen = 0;
     message->msg_flags = MSG_DONTWAIT;
     message->msg_iocb = NULL;
-    (*iov)[0].iov_len = messageLength;
-    (*iov)[0].iov_base = *messageBuffer;
+    (*iov)->iov_len = messageLength;
+    (*iov)->iov_base = *messageBuffer;
     iov_iter_init(&message->msg_iter,mode,*iov,1,1);
-    (*kv)[0].iov_len = messageLength;
-    (*kv)[0].iov_base = *messageBuffer;
+    (*kv)->iov_len = messageLength;
+    (*kv)->iov_base = *messageBuffer;
 }
 
 static int sendMessage(struct socket *socketConnection,
-char (*message)[MESSAGE_MAX_LENGTH],unsigned long int messageLength) {
+char **message,unsigned long int messageLength) {
     struct msghdr outputMessage;
-    struct iovec iov[1];
-    struct kvec kv[1];
+    struct iovec *iovp, iov[1];
+    struct kvec *kvp, kv[1];
     int len = -1;
+    iovp = iov;
+    kvp = kv;
 
-    configMessage(&outputMessage,&kv,&iov,message,messageLength,WRITE
+    configMessage(&outputMessage,&kvp,&iovp,message,messageLength,WRITE
     );
 
-    len = kernel_sendmsg(socketConnection,&outputMessage,kv,
+    len = kernel_sendmsg(socketConnection,&outputMessage,kvp,
     1,kv[0].iov_len);
     if (len < 0) {
         printk(KERN_INFO "Error: Could not send message\n");
@@ -98,17 +103,19 @@ char (*message)[MESSAGE_MAX_LENGTH],unsigned long int messageLength) {
     return len;
 }
 
-static int receiveMessage(struct socket *socketConnection,
-char (*message)[MESSAGE_MAX_LENGTH]) {
+static int ReadMessage(struct socket *socketConnection,
+char **message) {
     struct msghdr inputMessage;
-    struct iovec iov[1];
-    struct kvec kv[1];
+    struct iovec *iovp, iov[1];
+    struct kvec *kvp, kv[1];
     int len = -1;
+    iovp = iov;
+    kvp = kv;
 
-    configMessage(&inputMessage,&kv,&iov,message,MESSAGE_MAX_LENGTH,
+    configMessage(&inputMessage,&kvp,&iovp,message,MESSAGE_MAX_LENGTH,
     READ);
 
-    len = kernel_recvmsg(socketConnection,&inputMessage,kv,
+    len = kernel_recvmsg(socketConnection,&inputMessage,kvp,
     1,kv[0].iov_len,0);
     if (len < 0) {
         printk(KERN_INFO "Error: Could not receive message.\n");
@@ -129,8 +136,8 @@ static int socketServer(void *unused) {
     printk(KERN_INFO "Kernel thread created as: %s [PID=%d]\n",
     current->comm,current->pid);
 
-    len = initServerSocket(&defaultSocket,&socketAddress,INADDR_ANY,
-    SOCKET_PORT);
+    len = initServerSocket(&defaultSocket,&socketAddress,"0.0.0.0",
+    SERVER_PORT);
     if (len < 0) {
         printk(KERN_INFO "Error: Could not create server socket.\n");
         return -1;
@@ -146,7 +153,7 @@ static int socketServer(void *unused) {
 
     printk(KERN_INFO "Connection established.\n");
 
-    len = receiveMessage(newConnectionSocket,&inputBuffer);
+    len = receiveMessage(newConnectionSocket,&inputMessage);
     if (len < 0) {
         printk(KERN_INFO "Error: Could not send message.\n");
         return -1;
@@ -166,7 +173,7 @@ static int socketServer(void *unused) {
 
     printk(KERN_INFO "Answering client.\n");
 
-    len = sendMessage(newConnectionSocket,&outputBuffer,
+    len = sendMessage(newConnectionSocket,&outputMessage,
     messageLength);
     if (len < 0) {
         printk(KERN_INFO "Error: Could not receive message.\n");
@@ -175,7 +182,7 @@ static int socketServer(void *unused) {
 
     printk(KERN_INFO "Message sent.\n");
     
-    while(receiveMessage(newConnectionSocket,&inputBuffer));
+    while(receiveMessage(newConnectionSocket,&inputMessage));
     sock_release(newConnectionSocket);
     printk(KERN_INFO "Client disconnected.\n");
 
