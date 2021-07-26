@@ -1,6 +1,7 @@
 #include <linux/fs.h>
 #include <linux/in.h>
 #include <linux/init.h>
+#include <linux/inet.h>
 #include <linux/kernel.h>
 #include <linux/kthread.h>
 #include <linux/module.h>
@@ -17,7 +18,7 @@
 static struct task_struct *threadInfo;
 
 static int initServerSocket(struct socket **newSocket,
-struct sockaddr_in *socketAddress,unsigned int ipAddress,
+struct sockaddr_in *serverAddress,unsigned int ipAddress,
 unsigned short port) {
     int len = -1;
 
@@ -28,13 +29,13 @@ unsigned short port) {
         return -1;
     }
 
-    memset(socketAddress,0, sizeof(*socketAddress));
-    socketAddress->sin_family = AF_INET;
-    socketAddress->sin_port = htons(port);
-    socketAddress->sin_addr.s_addr = ipAddress;
+    memset(serverAddress,0, sizeof(*serverAddress));
+    serverAddress->sin_family = AF_INET;
+    serverAddress->sin_port = htons(port);
+    serverAddress->sin_addr.s_addr = ipAddress;
 
     len = (*newSocket)->ops->bind(*newSocket,
-    (struct sockaddr *)socketAddress,sizeof(*socketAddress));
+    (struct sockaddr *)serverAddress,sizeof(*serverAddress));
     if (len < 0) {
         printk(KERN_INFO "Error: Could not bind socket to address.\n");
         return -1;
@@ -49,7 +50,7 @@ unsigned short port) {
 }
 
 static int acceptConnection(struct socket *serverSocket,
-struct socket **newConnectionSocket) {
+struct socket **newConnectionSocket, struct sockaddr_in *socketAddress) {
     int len = -1;
     (*newConnectionSocket)= sock_alloc();
     (*newConnectionSocket)->type = serverSocket->type;
@@ -60,6 +61,8 @@ struct socket **newConnectionSocket) {
         printk(KERN_INFO "Error: Could not connect.\n");
         return -1;
     }
+    (*newConnectionSocket)->ops->getname(*newConnectionSocket,
+    (struct sockaddr *)socketAddress,2);
     return 0;
 }
 
@@ -121,7 +124,7 @@ static int socketServer(void *unused) {
     unsigned int messageLength;
     char outputBuffer[MESSAGE_MAX_LENGTH],
     inputBuffer[MESSAGE_MAX_LENGTH];
-    struct sockaddr_in serverAddress;
+    struct sockaddr_in serverAddress, clientAddress;
     struct socket *defaultSocket, *newConnectionSocket;
     int len = -1;
 
@@ -138,13 +141,17 @@ static int socketServer(void *unused) {
 
     printk(KERN_INFO "Waiting for client connections.\n");
 
-    len = acceptConnection(defaultSocket,&newConnectionSocket);
+    len = acceptConnection(defaultSocket,&newConnectionSocket,
+    &clientAddress);
     if (len < 0) {
         printk(KERN_INFO "Error: Could not connect.\n");
         return -1;
     }
 
     printk(KERN_INFO "Connection established.\n");
+    printk(KERN_INFO "Client ip and port are %u and %u respectively\n",
+    ntohl(clientAddress.sin_addr.s_addr),ntohs(clientAddress.sin_port)
+    );
 
     len = receiveMessage(newConnectionSocket,&inputBuffer);
     if (len < 0) {
