@@ -121,7 +121,7 @@ static int socketServer(void *unused) {
     unsigned int messageLength;
     char outputBuffer[MESSAGE_MAX_LENGTH],
     inputBuffer[MESSAGE_MAX_LENGTH];
-    struct sockaddr_in socketAddress;
+    struct sockaddr_in serverAddress;
     struct socket *defaultSocket, *newConnectionSocket;
     int len = -1;
 
@@ -129,7 +129,7 @@ static int socketServer(void *unused) {
     printk(KERN_INFO "Kernel thread created as: %s [PID=%d]\n",
     current->comm,current->pid);
 
-    len = initServerSocket(&defaultSocket,&socketAddress,INADDR_ANY,
+    len = initServerSocket(&defaultSocket,&serverAddress,INADDR_ANY,
     SOCKET_PORT);
     if (len < 0) {
         printk(KERN_INFO "Error: Could not create server socket.\n");
