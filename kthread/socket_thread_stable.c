@@ -13,7 +13,7 @@
 
 #define MAX_PENDING 5
 #define MESSAGE_MAX_LENGTH 256
-#define SERVER_PORT 54321
+#define SOCKET_PORT 54321
 
 static struct task_struct *threadInfo;
 
@@ -25,24 +25,24 @@ unsigned short port) {
     len = sock_create_kern(&init_net,PF_INET,SOCK_STREAM,IPPROTO_TCP,
     newSocket);
     if (len < 0) {
-        printk(KERN_INFO "Server: Error: Could not create socket.\n");
+        printk(KERN_INFO "Error: Could not create socket.\n");
         return -1;
     }
 
     memset(serverAddress,0, sizeof(*serverAddress));
     serverAddress->sin_family = AF_INET;
     serverAddress->sin_port = htons(port);
-    serverAddress->sin_addr.s_addr = htonl(ipAddress);
+    serverAddress->sin_addr.s_addr = ipAddress;
 
     len = (*newSocket)->ops->bind(*newSocket,
     (struct sockaddr *)serverAddress,sizeof(*serverAddress));
     if (len < 0) {
-        printk(KERN_INFO "Server: Error: Could not bind socket to address.\n");
+        printk(KERN_INFO "Error: Could not bind socket to address.\n");
         return -1;
     }
     len = (*newSocket)->ops->listen(*newSocket,MAX_PENDING);
     if (len < 0) {
-        printk(KERN_INFO "Server: Error: Could not listen to socket.\n");
+        printk(KERN_INFO "Error: Could not listen to socket.\n");
         return -1;
     }
 
@@ -58,7 +58,7 @@ struct socket **newConnectionSocket, struct sockaddr_in *socketAddress) {
     len = serverSocket->ops->accept(serverSocket,
     *newConnectionSocket, 0, false);
     if (len < 0) {
-        printk(KERN_INFO "Server: Error: Could not connect.\n");
+        printk(KERN_INFO "Error: Could not connect.\n");
         return -1;
     }
     (*newConnectionSocket)->ops->getname(*newConnectionSocket,
@@ -95,7 +95,7 @@ char (*message)[MESSAGE_MAX_LENGTH],unsigned long int messageLength) {
     len = kernel_sendmsg(socketConnection,&outputMessage,kv,
     1,kv[0].iov_len);
     if (len < 0) {
-        printk(KERN_INFO "Server: Error: Could not send message\n");
+        printk(KERN_INFO "Error: Could not send message\n");
         return -1;
     }
     return len;
@@ -114,7 +114,7 @@ char (*message)[MESSAGE_MAX_LENGTH]) {
     len = kernel_recvmsg(socketConnection,&inputMessage,kv,
     1,kv[0].iov_len,0);
     if (len < 0) {
-        printk(KERN_INFO "Server: Error: Could not receive message.\n");
+        printk(KERN_INFO "Error: Could not receive message.\n");
         return -1;
     }
     return len;
@@ -128,39 +128,38 @@ static int socketServer(void *unused) {
     struct socket *defaultSocket, *newConnectionSocket;
     int len = -1;
 
-    printk(KERN_INFO "Server: Starting socket server...\n");
-    printk(KERN_INFO "Server: Kernel thread created as: %s [PID=%d]\n",
+    printk(KERN_INFO "Starting socket server...\n");
+    printk(KERN_INFO "Kernel thread created as: %s [PID=%d]\n",
     current->comm,current->pid);
 
-    len = initServerSocket(&defaultSocket,&serverAddress,0x7F000001,
-    SERVER_PORT);
+    len = initServerSocket(&defaultSocket,&serverAddress,INADDR_ANY,
+    SOCKET_PORT);
     if (len < 0) {
-        printk(KERN_INFO "Server: Error: Could not create server socket.\n");
+        printk(KERN_INFO "Error: Could not create server socket.\n");
         return -1;
     }
 
-    printk(KERN_INFO "Server: Waiting for client connections.\n");
+    printk(KERN_INFO "Waiting for client connections.\n");
 
     len = acceptConnection(defaultSocket,&newConnectionSocket,
     &clientAddress);
     if (len < 0) {
-        printk(KERN_INFO "Server: Error: Could not connect.\n");
+        printk(KERN_INFO "Error: Could not connect.\n");
         return -1;
     }
 
-    printk(KERN_INFO "Server: Connection established.\n");
-    printk(KERN_INFO "Server: Server ip and port are 0x%x and %u respectively\n",
+    printk(KERN_INFO "Connection established.\n");
+    printk(KERN_INFO "Client ip and port are %u and %u respectively\n",
     ntohl(clientAddress.sin_addr.s_addr),ntohs(clientAddress.sin_port)
     );
 
     len = receiveMessage(newConnectionSocket,&inputBuffer);
     if (len < 0) {
-        printk(KERN_INFO "Sever: Error: Could not receive message.\n"
-	);
+        printk(KERN_INFO "Error: Could not send message.\n");
         return -1;
     }
     inputBuffer[len] = '\0';
-    printk (KERN_INFO "Server: Client says: %s %d\n",
+    printk (KERN_INFO "Client says: %s %d\n",
     inputBuffer, len);
   
     messageLength = 14;
@@ -172,41 +171,41 @@ static int socketServer(void *unused) {
     outputBuffer[10] = 'e'; outputBuffer[11] = 'n';
     outputBuffer[12] = 't'; outputBuffer[13] = '!';
 
-    printk(KERN_INFO "Server: Answering client.\n");
+    printk(KERN_INFO "Answering client.\n");
 
     len = sendMessage(newConnectionSocket,&outputBuffer,
     messageLength);
     if (len < 0) {
-        printk(KERN_INFO "Server: Error: Could not send message.\n");
+        printk(KERN_INFO "Error: Could not receive message.\n");
         return -1;
     }
 
-    printk(KERN_INFO "Server: Message sent.\n");
+    printk(KERN_INFO "Message sent.\n");
     
     while(receiveMessage(newConnectionSocket,&inputBuffer));
     sock_release(newConnectionSocket);
-    printk(KERN_INFO "Server: Client disconnected.\n");
+    printk(KERN_INFO "Client disconnected.\n");
 
     sock_release(defaultSocket);
-    printk(KERN_INFO "Server: Socket connection closed.\n");
+    printk(KERN_INFO "Socket connection closed.\n");
 
     return 0;
 }
 
 static int __init initThread(void) {
-    printk(KERN_INFO "Server: Dummy thread creation\n");
+    printk(KERN_INFO "Dummy thread creation\n");
     threadInfo = kthread_create(socketServer,NULL,"Dummy Thread 1");
     if(IS_ERR(threadInfo)) {
-        printk(KERN_INFO "Server: Failed creating the thread.");
+        printk(KERN_INFO "Failed creating the thread.");
     } else {
-        printk(KERN_INFO "Server: Successfully created the thread.");
+        printk(KERN_INFO "Successfully created the thread.");
 	wake_up_process(threadInfo);
     }
     return 0;
 }
 
 static void __exit threadCleanup(void) {
-    printk(KERN_INFO "Server: Thread clean up.");
+    printk(KERN_INFO "Thread clean up.");
 }
 
 module_init(initThread);

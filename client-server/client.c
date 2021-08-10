@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,24 +14,16 @@ int main(int argc, char * argv[])
 {
     printf("Inicializando client...\n");
     //FILE *fp;
-    struct hostent *hp;
     struct sockaddr_in sin;
     char *host;
     char buf[MAX_LINE];
     int s, len;
-    host = "192.168.100.1"; 
-    host = "10.0.2.15";
     host = "127.0.0.1";
     printf("Host: %s\n", host);
-    hp = gethostbyname(host);
-    if (!hp) {
-        fprintf(stderr, "simplex-talk: unknown host: %s\n", host);
-        exit(1);
-    }
     /* build address data structure */
     bzero((char *)&sin, sizeof(sin));
     sin.sin_family = AF_INET;
-    bcopy(hp->h_addr, (char *)&sin.sin_addr, hp->h_length);
+    sin.sin_addr.s_addr = htonl(0x7F000001);
     sin.sin_port = htons(SERVER_PORT);
     /* active open */
     if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
