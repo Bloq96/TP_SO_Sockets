@@ -13,6 +13,7 @@
 
 #define MAX_PENDING 5
 #define MESSAGE_MAX_LENGTH 256
+#define MAX_MESSAGES 4
 #define SERVER_PORT 54321
 #define MAX_CONNECTIONS 2
 
@@ -68,7 +69,7 @@ struct socket **newConnectionSocket, struct sockaddr_in *socketAddress) {
 }
 
 static void configMessage(struct msghdr *message,struct kvec (*kv)[1],
-struct iovec (*iov)[1],char (*messageBuffer)[MESSAGE_MAX_LENGTH],
+struct iovec (*iov)[1],char (*messageBuffer)[MESSAGE_MAX_LENGTH+2],
 unsigned long int messageLength,unsigned int mode) {
     message->msg_name = NULL;
     message->msg_namelen = 0;
@@ -84,7 +85,7 @@ unsigned long int messageLength,unsigned int mode) {
 }
 
 static int sendMessage(struct socket *socketConnection,
-char (*message)[MESSAGE_MAX_LENGTH],unsigned long int messageLength) {
+char (*message)[MESSAGE_MAX_LENGTH+2],unsigned long int messageLength) {
     struct msghdr outputMessage;
     struct iovec iov[1];
     struct kvec kv[1];
@@ -103,13 +104,13 @@ char (*message)[MESSAGE_MAX_LENGTH],unsigned long int messageLength) {
 }
 
 static int receiveMessage(struct socket *socketConnection,
-char (*message)[MESSAGE_MAX_LENGTH]) {
+char (*message)[MESSAGE_MAX_LENGTH+2]) {
     struct msghdr inputMessage;
     struct iovec iov[1];
     struct kvec kv[1];
     int len = -1;
 
-    configMessage(&inputMessage,&kv,&iov,message,MESSAGE_MAX_LENGTH,
+    configMessage(&inputMessage,&kv,&iov,message,MESSAGE_MAX_LENGTH+2,
     READ);
 
     len = kernel_recvmsg(socketConnection,&inputMessage,kv,
@@ -118,16 +119,20 @@ char (*message)[MESSAGE_MAX_LENGTH]) {
         printk(KERN_INFO "Server: Error: Could not receive message.\n");
         return -1;
     }
+    (*message)[len] = '\0';
     return len;
 }
 
 static int socketServer(void *unused) {
     unsigned int messageLength;
-    char outputBuffer[MESSAGE_MAX_LENGTH],
-    inputBuffer[MESSAGE_MAX_LENGTH];
+    char outputBuffer[MESSAGE_MAX_LENGTH+2],
+    inputBuffer[MESSAGE_MAX_LENGTH+2],
+    buffer[MAX_MESSAGES+1][MESSAGE_MAX_LENGTH+2];
     struct sockaddr_in serverAddress, clientAddress;
     struct socket *defaultSocket, *newConnectionSocket;
-    int len = -1;
+    int it = 0, len = -1;
+    int bufferStart = 0, bufferEnd = 0,
+    messagesLengths[MAX_MESSAGES+1];
     int connectionCount = 0;
 
     printk(KERN_INFO "Server: Starting socket server...\n");
@@ -152,9 +157,6 @@ static int socketServer(void *unused) {
         }
 
         printk(KERN_INFO "Server: Connection established.\n");
-        printk(KERN_INFO "Server: Server ip and port are 0x%x and %u respectively\n",
-        ntohl(clientAddress.sin_addr.s_addr),
-	ntohs(clientAddress.sin_port));
 
 	++connectionCount;
 
@@ -164,21 +166,43 @@ static int socketServer(void *unused) {
 	    );
             return -1;
         }
-        inputBuffer[len] = '\0';
-        printk (KERN_INFO "Server: Client says: %s %d\n",
-        inputBuffer, len);
+	switch(inputBuffer[0]) {
+	    case 'R':
+		if(bufferStart==bufferEnd) {
+		    outputBuffer[0] = 'E';
+		    messageLength = 1;
+		} else {
+                    printk(KERN_INFO "Server: Client requesting data.\n");
+		    outputBuffer[0] = 'M';
+                    for(it=1;it<MESSAGE_MAX_LENGTH+2;++it) {
+		        outputBuffer[it] = buffer[bufferStart][it];
+		    }
+		    messageLength = messagesLengths[bufferStart];
+		    bufferStart = 
+		    (bufferStart+1)%(MESSAGE_MAX_LENGTH+1);
+		}
+		break;
+	    case 'W':
+		if(bufferStart==
+		(bufferEnd+1)%(MESSAGE_MAX_LENGTH+1)) {
+		    outputBuffer[0] = 'E';
+		    messageLength = 1;
+		} else {
+                    printk(KERN_INFO "Server: Client sending data.\n");
+		    outputBuffer[0] = 'A';
+                    for(it=0;it<MESSAGE_MAX_LENGTH+2;++it) {
+		        buffer[bufferEnd][it] = inputBuffer[it];
+		    }
+		    messagesLengths[bufferEnd] = len;
+		    messageLength = 1;
+		    bufferEnd = (bufferEnd+1)%(MESSAGE_MAX_LENGTH+1);
+		}
+                break;
+	    default:
+		outputBuffer[0] = 'E';
+		messageLength = 1;
+        }
   
-        messageLength = 14;
-        outputBuffer[0] = 'H'; outputBuffer[1] = 'e';
-        outputBuffer[2] = 'l'; outputBuffer[3] = 'l';
-        outputBuffer[4] = 'o'; outputBuffer[5] = ',';
-        outputBuffer[6] = ' '; outputBuffer[7] = 'c';
-        outputBuffer[8] = 'l'; outputBuffer[9] = 'i';
-        outputBuffer[10] = 'e'; outputBuffer[11] = 'n';
-        outputBuffer[12] = 't'; outputBuffer[13] = '!';
-
-        printk(KERN_INFO "Server: Answering client.\n");
-
         len = sendMessage(newConnectionSocket,&outputBuffer,
         messageLength);
         if (len < 0) {
@@ -187,7 +211,7 @@ static int socketServer(void *unused) {
             return -1;
         }
 
-        printk(KERN_INFO "Server: Message sent.\n");
+        printk(KERN_INFO "Server: Answering client.\n");
     
         while(receiveMessage(newConnectionSocket,&inputBuffer));
         sock_release(newConnectionSocket);
