@@ -49,7 +49,7 @@ unsigned short port) {
 }
 
 static void configMessage(struct msghdr *message,struct kvec (*kv)[1],
-struct iovec (*iov)[1],char (*messageBuffer)[MESSAGE_MAX_LENGTH],
+struct iovec (*iov)[1],char (*messageBuffer)[MESSAGE_MAX_LENGTH+2],
 unsigned long int messageLength,unsigned int mode) {
     message->msg_name = NULL;
     message->msg_namelen = 0;
@@ -65,7 +65,7 @@ unsigned long int messageLength,unsigned int mode) {
 }
 
 static int sendMessage(struct socket *socketConnection,
-char (*message)[MESSAGE_MAX_LENGTH],unsigned long int messageLength) {
+char (*message)[MESSAGE_MAX_LENGTH+2],unsigned long int messageLength) {
     struct msghdr outputMessage;
     struct iovec iov[1];
     struct kvec kv[1];
@@ -84,13 +84,13 @@ char (*message)[MESSAGE_MAX_LENGTH],unsigned long int messageLength) {
 }
 
 static int receiveMessage(struct socket *socketConnection,
-char (*message)[MESSAGE_MAX_LENGTH]) {
+char (*message)[MESSAGE_MAX_LENGTH+2]) {
     struct msghdr inputMessage;
     struct iovec iov[1];
     struct kvec kv[1];
     int len = -1;
 
-    configMessage(&inputMessage,&kv,&iov,message,MESSAGE_MAX_LENGTH,
+    configMessage(&inputMessage,&kv,&iov,message,MESSAGE_MAX_LENGTH+2,
     READ);
 
     len = kernel_recvmsg(socketConnection,&inputMessage,kv,
@@ -103,13 +103,13 @@ char (*message)[MESSAGE_MAX_LENGTH]) {
     return len;
 }
 
-static int socketClient(void) {
+static int socketClient(char requestType, char* request,
+char (*reply)[MESSAGE_MAX_LENGTH+2]) {
     unsigned int messageLength;
-    char outputBuffer[MESSAGE_MAX_LENGTH],
-    inputBuffer[MESSAGE_MAX_LENGTH];
+    char outputBuffer[MESSAGE_MAX_LENGTH+2];
     struct sockaddr_in serverAddress;
     struct socket *defaultSocket;
-    int len = -1;
+    int it = 0, len = -1;
 
     printk(KERN_INFO "Client: Starting socket client...\n");
 
@@ -129,19 +129,22 @@ static int socketClient(void) {
         return -1;
     }
 
+    outputBuffer[0] = requestType;
+    messageLength = 1;
+
+    if(requestType == 'W') {
+        for(it=1;it<MESSAGE_MAX_LENGTH+1;++it) {
+            if(request[it]=='\0') {
+	        break;
+	    }
+	    outputBuffer[it] = request[it];
+	}
+	outputBuffer[it] = '\0';
+	messageLength = it;
+    }
+
     printk(KERN_INFO "Client: Connection established.\n");
-  
-    messageLength = 14;
-    outputBuffer[0] = 'H'; outputBuffer[1] = 'e';
-    outputBuffer[2] = 'l'; outputBuffer[3] = 'l';
-    outputBuffer[4] = 'o'; outputBuffer[5] = ',';
-    outputBuffer[6] = ' '; outputBuffer[7] = 's';
-    outputBuffer[8] = 'e'; outputBuffer[9] = 'r';
-    outputBuffer[10] = 'v'; outputBuffer[11] = 'e';
-    outputBuffer[12] = 'r'; outputBuffer[13] = '!';
-
-    printk(KERN_INFO "Client: Greeting server.\n");
-
+    
     len = sendMessage(defaultSocket,&outputBuffer,
     messageLength);
     if (len < 0) {
@@ -149,15 +152,17 @@ static int socketClient(void) {
         return -1;
     }
 
-    printk(KERN_INFO "Client: Message sent.\n");
+    printk(KERN_INFO "Client: Making request.\n");
+    printk(KERN_INFO "Client: Message is %s\n", outputBuffer);
 
-    len = receiveMessage(defaultSocket,&inputBuffer);
+    len = receiveMessage(defaultSocket,reply);
     if (len < 0) {
         printk(KERN_INFO "Client: Error: Could not receive message.\n");
         return -1;
     }
-    printk (KERN_INFO "Client: Server replies: %s %d\n",
-    inputBuffer, len);
+
+    printk (KERN_INFO "Client: Server replies: %s [%d]\n",
+    *reply, len);
 
     sock_release(defaultSocket);
     printk(KERN_INFO "Client: Socket connection closed.\n");
@@ -166,7 +171,8 @@ static int socketClient(void) {
 }
 
 static int __init initThread(void) {
-    socketClient();
+    char buffer[MESSAGE_MAX_LENGTH+2];
+    socketClient('W',"Hello, server!",&buffer);
     return 0;
 }
 

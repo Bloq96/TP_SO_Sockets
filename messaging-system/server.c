@@ -13,9 +13,9 @@
 
 #define MAX_PENDING 5
 #define MESSAGE_MAX_LENGTH 256
-#define MAX_MESSAGES 4
+#define MAX_MESSAGES 2
 #define SERVER_PORT 54321
-#define MAX_CONNECTIONS 2
+#define MAX_CONNECTIONS 7
 
 static struct task_struct *threadInfo;
 
