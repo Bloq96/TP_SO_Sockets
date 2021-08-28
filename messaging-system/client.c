@@ -134,14 +134,15 @@ char (*reply)[MESSAGE_MAX_LENGTH+2]) {
 
     if(requestType == 'W') {
         for(it=1;it<MESSAGE_MAX_LENGTH+1;++it) {
-            if(request[it]=='\0') {
+            if(request[it-1]=='\0') {
 	        break;
 	    }
-	    outputBuffer[it] = request[it];
+	    outputBuffer[it] = request[it-1];
 	}
-	outputBuffer[it] = '\0';
 	messageLength = it;
     }
+
+    outputBuffer[messageLength] = '\0';
 
     printk(KERN_INFO "Client: Connection established.\n");
     
@@ -172,7 +173,7 @@ char (*reply)[MESSAGE_MAX_LENGTH+2]) {
 
 static int __init initThread(void) {
     char buffer[MESSAGE_MAX_LENGTH+2];
-    socketClient('W',"Hello, server!",&buffer);
+    socketClient('R',"Hello, server!",&buffer);
     return 0;
 }
 

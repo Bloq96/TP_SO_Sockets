@@ -172,30 +172,31 @@ static int socketServer(void *unused) {
 		    outputBuffer[0] = 'E';
 		    messageLength = 1;
 		} else {
-                    printk(KERN_INFO "Server: Client requesting data.\n");
 		    outputBuffer[0] = 'M';
                     for(it=1;it<MESSAGE_MAX_LENGTH+2;++it) {
 		        outputBuffer[it] = buffer[bufferStart][it];
 		    }
 		    messageLength = messagesLengths[bufferStart];
+                    printk(KERN_INFO "Server: Sending %s [%d - %d - %d]\n",
+		    outputBuffer,bufferStart,bufferEnd,messageLength);
 		    bufferStart = 
-		    (bufferStart+1)%(MESSAGE_MAX_LENGTH+1);
+		    (bufferStart+1)%(MAX_MESSAGES+1);
 		}
 		break;
 	    case 'W':
-		if(bufferStart==
-		(bufferEnd+1)%(MESSAGE_MAX_LENGTH+1)) {
+		if(bufferStart==(bufferEnd+1)%(MAX_MESSAGES+1)) {
 		    outputBuffer[0] = 'E';
 		    messageLength = 1;
 		} else {
-                    printk(KERN_INFO "Server: Client sending data.\n");
 		    outputBuffer[0] = 'A';
                     for(it=0;it<MESSAGE_MAX_LENGTH+2;++it) {
 		        buffer[bufferEnd][it] = inputBuffer[it];
 		    }
 		    messagesLengths[bufferEnd] = len;
 		    messageLength = 1;
-		    bufferEnd = (bufferEnd+1)%(MESSAGE_MAX_LENGTH+1);
+                    printk(KERN_INFO "Server: Client sent %s [%d - %d - %d]\n",
+		    buffer[bufferEnd],bufferStart,bufferEnd,len);
+		    bufferEnd = (bufferEnd+1)%(MAX_MESSAGES+1);
 		}
                 break;
 	    default:
