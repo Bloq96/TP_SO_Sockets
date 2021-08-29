@@ -8,11 +8,12 @@
 #include <linux/net.h>
 #include <linux/seq_file_net.h>
 #include <linux/socket.h>
+#include <linux/syscalls.h>
 #include <linux/uaccess.h>
 #include <linux/uio.h>
 
 #define MAX_PENDING 5
-#define MESSAGE_MAX_LENGTH 256
+//#define MESSAGE_MAX_LENGTH 256
 #define SERVER_PORT 54321
 
 static int initClientSocket(struct socket **newSocket) {
@@ -103,7 +104,7 @@ char (*message)[MESSAGE_MAX_LENGTH+2]) {
     return len;
 }
 
-static int socketClient(char requestType, char* request,
+int __sys_message_client(char requestType, char* request,
 char (*reply)[MESSAGE_MAX_LENGTH+1]) {
     unsigned int messageLength;
     char inputBuffer[MESSAGE_MAX_LENGTH+2],
@@ -179,15 +180,7 @@ char (*reply)[MESSAGE_MAX_LENGTH+1]) {
     return 0;
 }
 
-static int __init initThread(void) {
-    char buffer[MESSAGE_MAX_LENGTH+1];
-    socketClient('W',"Hello, server!",&buffer);
-    return 0;
+SYSCALL_DEFINE3(message_client, char, requestType, char*, request,
+char (*)[MESSAGE_MAX_LENGTH+1], reply) {
+    return __sys_message_client(requestType, request, reply);
 }
-
-static void __exit threadCleanup(void) {
-    printk(KERN_INFO "Client: Thread clean up.");
-}
-
-module_init(initThread);
-module_exit(threadCleanup);

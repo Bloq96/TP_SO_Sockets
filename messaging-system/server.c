@@ -175,6 +175,9 @@ static int socketServer(void *unused) {
 		    outputBuffer[0] = 'M';
                     for(it=1;it<MESSAGE_MAX_LENGTH+2;++it) {
 		        outputBuffer[it] = buffer[bufferStart][it];
+			if(outputBuffer[it]=='\0') {
+			    break;
+			}
 		    }
 		    messageLength = messagesLengths[bufferStart];
                     printk(KERN_INFO "Server: Sending %s [%d - %d - %d]\n",
@@ -191,6 +194,9 @@ static int socketServer(void *unused) {
 		    outputBuffer[0] = 'A';
                     for(it=0;it<MESSAGE_MAX_LENGTH+2;++it) {
 		        buffer[bufferEnd][it] = inputBuffer[it];
+			if(buffer[bufferEnd][it]=='\0') {
+			    break;
+			}
 		    }
 		    messagesLengths[bufferEnd] = len;
 		    messageLength = 1;
