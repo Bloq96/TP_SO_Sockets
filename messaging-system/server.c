@@ -170,7 +170,20 @@ static int socketServer(void *unused) {
 	    case 'R':
 		if(bufferStart==bufferEnd) {
 		    outputBuffer[0] = 'E';
-		    messageLength = 1;
+		    outputBuffer[1] = 'E';
+		    outputBuffer[2] = 'm';
+		    outputBuffer[3] = 'p';
+		    outputBuffer[4] = 't';
+		    outputBuffer[5] = 'y';
+		    outputBuffer[6] = ' ';
+		    outputBuffer[7] = 'b';
+		    outputBuffer[8] = 'u';
+		    outputBuffer[9] = 'f';
+		    outputBuffer[10] = 'f';
+		    outputBuffer[11] = 'e';
+		    outputBuffer[12] = 'r';
+		    outputBuffer[13] = '!';
+		    messageLength = 14;
 		} else {
 		    outputBuffer[0] = 'M';
                     for(it=1;it<MESSAGE_MAX_LENGTH+2;++it) {
@@ -189,9 +202,39 @@ static int socketServer(void *unused) {
 	    case 'W':
 		if(bufferStart==(bufferEnd+1)%(MAX_MESSAGES+1)) {
 		    outputBuffer[0] = 'E';
-		    messageLength = 1;
+		    outputBuffer[1] = 'B';
+		    outputBuffer[2] = 'u';
+		    outputBuffer[3] = 'f';
+		    outputBuffer[4] = 'f';
+		    outputBuffer[5] = 'e';
+		    outputBuffer[6] = 'r';
+		    outputBuffer[7] = ' ';
+		    outputBuffer[8] = 'f';
+		    outputBuffer[9] = 'u';
+		    outputBuffer[10] = 'l';
+		    outputBuffer[11] = 'l';
+		    outputBuffer[12] = '!';
+		    messageLength = 13;
 		} else {
 		    outputBuffer[0] = 'A';
+		    outputBuffer[1] = 'M';
+		    outputBuffer[2] = 'e';
+		    outputBuffer[3] = 's';
+		    outputBuffer[4] = 's';
+		    outputBuffer[5] = 'a';
+		    outputBuffer[6] = 'g';
+		    outputBuffer[7] = 'e';
+		    outputBuffer[8] = ' ';
+		    outputBuffer[9] = 'a';
+		    outputBuffer[10] = 'c';
+		    outputBuffer[11] = 'c';
+		    outputBuffer[12] = 'e';
+		    outputBuffer[13] = 'p';
+		    outputBuffer[14] = 't';
+		    outputBuffer[15] = 'e';
+		    outputBuffer[16] = 'd';
+		    outputBuffer[17] = '!';
+		    messageLength = 18;
                     for(it=0;it<MESSAGE_MAX_LENGTH+2;++it) {
 		        buffer[bufferEnd][it] = inputBuffer[it];
 			if(buffer[bufferEnd][it]=='\0') {
@@ -199,7 +242,6 @@ static int socketServer(void *unused) {
 			}
 		    }
 		    messagesLengths[bufferEnd] = len;
-		    messageLength = 1;
                     printk(KERN_INFO "Server: Client sent %s [%d - %d - %d]\n",
 		    buffer[bufferEnd],bufferStart,bufferEnd,len);
 		    bufferEnd = (bufferEnd+1)%(MAX_MESSAGES+1);
@@ -207,7 +249,23 @@ static int socketServer(void *unused) {
                 break;
 	    default:
 		outputBuffer[0] = 'E';
-		messageLength = 1;
+		outputBuffer[1] = 'U';
+		outputBuffer[2] = 'n';
+		outputBuffer[3] = 'k';
+		outputBuffer[4] = 'n';
+		outputBuffer[5] = 'o';
+		outputBuffer[6] = 'w';
+		outputBuffer[7] = 'n';
+		outputBuffer[8] = ' ';
+		outputBuffer[9] = 'R';
+		outputBuffer[10] = 'e';
+		outputBuffer[11] = 'q';
+		outputBuffer[12] = 'u';
+		outputBuffer[13] = 'e';
+		outputBuffer[14] = 's';
+		outputBuffer[15] = 't';
+		outputBuffer[16] = '!';
+		messageLength = 17;
         }
   
         len = sendMessage(newConnectionSocket,&outputBuffer,

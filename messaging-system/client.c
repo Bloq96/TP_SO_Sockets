@@ -181,7 +181,7 @@ char *reply) {
 
 static int __init initThread(void) {
     char buffer[MESSAGE_MAX_LENGTH+1];
-    socketClient('R',"Hello, server!",(char *)buffer);
+    socketClient('U',"Hello, server!",(char *)buffer);
     if(buffer[0]!='\0') {
         printk(KERN_INFO "User: Got %s\n",buffer); 
     }

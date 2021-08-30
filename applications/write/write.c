@@ -7,5 +7,6 @@ int main(int argc, char *argv[]) {
     }
     char buffer[257];
     syscall(548,'W',argv[1],(char *)buffer);
+    printf("%s\n",(char *)buffer);
     return 0;
 }
