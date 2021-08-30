@@ -53,3 +53,5 @@ dkms.conf
 
 # Swap files
 *.swp
+
+*.tmp_2180

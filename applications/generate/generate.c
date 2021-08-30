@@ -5,7 +5,7 @@
 int main(void) {
     srand(time(NULL));
     FILE *filePointer;
-    filePointer = fopen("monthly-averages.txt","w");
+    filePointer = fopen("monthly-averages.csv","w");
     if(filePointer != NULL) {
         char *months[12] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN",
 	"JUL", "AGU", "SEP", "OCT", "NOV", "DEC"};
