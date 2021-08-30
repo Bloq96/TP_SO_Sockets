@@ -103,8 +103,8 @@ char (*message)[MESSAGE_MAX_LENGTH+2]) {
     return len;
 }
 
-static int socketClient(char requestType, char* request,
-char (*reply)[MESSAGE_MAX_LENGTH+1]) {
+static int socketClient(char requestType, char *request,
+char *reply) {
     unsigned int messageLength;
     char inputBuffer[MESSAGE_MAX_LENGTH+2],
     outputBuffer[MESSAGE_MAX_LENGTH+2];
@@ -164,14 +164,14 @@ char (*reply)[MESSAGE_MAX_LENGTH+1]) {
     }
 
     for(it=0;it<MESSAGE_MAX_LENGTH+1;++it) {
-        (*reply)[it] = inputBuffer[it+1];
-	if((*reply)[it]=='\0') {
+        reply[it] = inputBuffer[it+1];
+	if(reply[it]=='\0') {
 	    break;
 	}
     }
 
     printk (KERN_INFO "Client: Server replies: %c: %s [%d]\n",
-    inputBuffer[0],*reply, len);
+    inputBuffer[0],reply, len);
 
     sock_release(defaultSocket);
     printk(KERN_INFO "Client: Socket connection closed.\n");
@@ -181,7 +181,10 @@ char (*reply)[MESSAGE_MAX_LENGTH+1]) {
 
 static int __init initThread(void) {
     char buffer[MESSAGE_MAX_LENGTH+1];
-    socketClient('W',"Hello, server!",&buffer);
+    socketClient('R',"Hello, server!",(char *)buffer);
+    if(buffer[0]!='\0') {
+        printk(KERN_INFO "User: Got %s\n",buffer); 
+    }
     return 0;
 }
 

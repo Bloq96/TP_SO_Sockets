@@ -180,7 +180,7 @@ char (*reply)[MESSAGE_MAX_LENGTH+1]) {
     return 0;
 }
 
-SYSCALL_DEFINE3(message_client, char, requestType, char*, request,
+SYSCALL_DEFINE3(message_client, char, requestType, char *, request,
 char (*)[MESSAGE_MAX_LENGTH+1], reply) {
     return __sys_message_client(requestType, request, reply);
 }
