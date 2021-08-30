@@ -13,7 +13,7 @@
 #include <linux/uio.h>
 
 #define MAX_PENDING 5
-//#define MESSAGE_MAX_LENGTH 256
+#define MESSAGE_MAX_LENGTH 256
 #define SERVER_PORT 54321
 
 static int initClientSocket(struct socket **newSocket) {
@@ -104,8 +104,8 @@ char (*message)[MESSAGE_MAX_LENGTH+2]) {
     return len;
 }
 
-int __sys_message_client(char requestType, char* request,
-char (*reply)[MESSAGE_MAX_LENGTH+1]) {
+int __sys_message_client(char requestType, char *request, char *reply)
+{
     unsigned int messageLength;
     char inputBuffer[MESSAGE_MAX_LENGTH+2],
     outputBuffer[MESSAGE_MAX_LENGTH+2];
@@ -165,14 +165,14 @@ char (*reply)[MESSAGE_MAX_LENGTH+1]) {
     }
 
     for(it=0;it<MESSAGE_MAX_LENGTH+1;++it) {
-        (*reply)[it] = inputBuffer[it+1];
-	if((*reply)[it]=='\0') {
+        reply[it] = inputBuffer[it+1];
+	if(reply[it]=='\0') {
 	    break;
 	}
     }
 
     printk (KERN_INFO "Client: Server replies: %c: %s [%d]\n",
-    inputBuffer[0],*reply, len);
+    inputBuffer[0],reply,len);
 
     sock_release(defaultSocket);
     printk(KERN_INFO "Client: Socket connection closed.\n");
@@ -181,6 +181,6 @@ char (*reply)[MESSAGE_MAX_LENGTH+1]) {
 }
 
 SYSCALL_DEFINE3(message_client, char, requestType, char *, request,
-char (*)[MESSAGE_MAX_LENGTH+1], reply) {
+char *, reply) {
     return __sys_message_client(requestType, request, reply);
 }
